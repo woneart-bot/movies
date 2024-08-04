@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Movies</title>
+  <link rel="icon" href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhlqI1NXS_sO-oZ2h73XijrNDDCsIRZMtL3sUaaQ33mcLUfIhVyNaixusF0qBKz7jna96YaKMQYySiVZ0srIO45XGjTR3mF-K_X6cHHXA-04aRkXhuLT6WTegEf4-nwimr_pPchyTNAexqi5Ku2uRSQYLuVq_-YYkvc6ttQc4Yau7ktsVEpw2D7pbA1/s1600/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="styles.css">
+  
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        
+        h1, h2, h3 {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            text-align: center;
+            margin-top: 20px;
+            color: #333;
+        }
+        
+        #chat-container {
+            top: 50%;
+            left: 50%;
+            max-width: 600px;
+            margin: 10px auto;
+            padding: 12px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        @media only screen and (max-height: 600px) {
+            #chat-container {
+                max-width: 100%;
+            }
+        }
+
+        #messages {
+            max-height: 300px;
+            padding: 10px;
+            overflow-y: auto;
+        }
+
+        #messages p {
+            margin: 0;
+            padding: 12px;
+            border-radius: 5px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        p {
+            margin: 0;
+            padding: 5px 10px;
+            background-color: #e0f7fa;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        small {
+            display: block;
+            text-align: right;
+            color: #888;
+            font-size: 0.8em;
+        }
+
+        #chat-container input,
+        #chat-container button {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-top: 10px;
+            margin-bottom: 1px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        #chat-container button {
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #notification {
+            text-align: center;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .success-notification {
+            background-color: #4CAF;
+            color: white;
+        }
+
+        .error-notification {
+            background-color: #f44336;
+            color: white;
+        }
+
+        @media only screen and (max-width: 600px) {
+            #chat-container {
+                max-width: 100%;
+            }
+        }
+
+        input,
+        button {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+  <div id="chat-container">
+     <header class="header" style="padding: 12px 18px 0; justify-content: space-between;">
+    <!--<div class="request"><a href="/"><strong>BACK</strong></a></div>-->
+  </header>
+  
+        <h1>Request Movies</h1>
+        <div id="request"></div>
+        <input type="text" id="messageInput" placeholder="Type your message">
+        <button onclick="sendMessage()">Send</button>
+        <div id="notification"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://woneart-chat-default-rtdb.firebaseio.com",
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            
+            const message = messageInput.value.trim();
+
+            if (message !== '') {
+                database.ref('request').push({
+                    message: message,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                });
+
+                messageInput.value = '';
+                const notificationElement = document.getElementById('notification');
+                notificationElement.innerHTML = '<p class="success-notification">Message sent successfully!</p>';
+                setTimeout(() => {
+                    notificationElement.innerHTML = '';
+                }, 3000);
+            }
+        }
+
+        function receiveMessages() {
+            const messagesDiv = document.getElementById('request');
+
+            database.ref('request').on('child_added', (snapshot) => {
+                const message = snapshot.val();
+                const messageElement = document.createElement('div');
+                const messageText = message.message;
+                messageElement.innerHTML = `<p>${messageText}</p><small>${formatTimestamp(message.timestamp)}</small>`;
+                messagesDiv.appendChild(messageElement);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            });
+        }
+
+        function formatTimestamp(timestamp) {
+            const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const date = new Date(timestamp);
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            
+            const dayOfWeek = daysOfWeek[date.getDay()];
+            const month = monthNames[date.getMonth()];
+            const day = (date.getDate() < 10 ? '0' : '') + date.getDate();
+            const year = date.getFullYear();
+            const hours = (date.getHours() < 10 ? '0' : '') + date.getHours();
+            const minutes = (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
+
+            return `${dayOfWeek}, ${month}/${day}/${year} ${hours}:${minutes}`;
+        }
+
+        receiveMessages();
+    </script>
+</body>
+</html>
